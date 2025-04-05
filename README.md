@@ -17,9 +17,3 @@ This project analyzes the ERBB signaling network using Boolean network modeling 
 - `results/` - Analysis results
   - `figures/` - Generated visualizations
 - `notebooks/` - Jupyter notebooks for interactive analysis
-
-## Setup and Execution
-
-1. Install dependencies:
-```bash
-pip install boon pandas matplotlib networkx sympy

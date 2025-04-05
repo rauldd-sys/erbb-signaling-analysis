@@ -27,6 +27,8 @@ import networkx as nx
 from sympy import symbols, true
 from sympy.core.relational import Relational
 from tabulate import tabulate
+from collections import defaultdict
+import itertools
 
 
 def safe_bool(value):
@@ -125,13 +127,16 @@ def analyze_attractors(model, use_cache=True, cache_dir='../cache'):
     for i, state in enumerate(stable_states):
         # Calculate active nodes percentage
         total_nodes = len(model.variables)
-        active_nodes_count = sum(1 for var, val in state.items() if val)
+        active_nodes_count = sum(1 for var, val in state.items() if safe_bool(val))
+        
+        # Convert all values in the state to Python booleans
+        clean_state = {k: safe_bool(v) for k, v in state.items()}
         
         attractor_info = {
             'id': i + 1,
             'type': 'Stable State',
             'length': 1,
-            'states': [state],
+            'states': [clean_state],
             'active_percentage': (active_nodes_count / total_nodes) * 100
         }
         processed_attractors.append(attractor_info)
@@ -141,7 +146,7 @@ def analyze_attractors(model, use_cache=True, cache_dir='../cache'):
         'stable_states': processed_attractors,  # All attractors are stable states for now
         'cycles': [],  # No cycles detected yet
         'stable_states_df': pd.DataFrame(
-            [{str(k): int(v) for k, v in s.items()} for s in stable_states]
+            [{str(k): int(safe_bool(v)) for k, v in s.items()} for s in stable_states]
         ) if stable_states else None,
         'count': len(processed_attractors),
         'stable_count': len(processed_attractors),
@@ -202,7 +207,15 @@ def visualize_attractor_basin(model, attractor_id, max_states=50, cached_results
                 f"Attractor ID {attractor_id} doesn't exist. "
                 f"Only {len(cached_results['stable_states'])} attractors found."
             )
-        target_state = cached_results['stable_states'][attractor_id - 1]['states'][0]
+        # Make sure we're getting a clean dictionary with python booleans, not SymPy expressions
+        raw_state = cached_results['stable_states'][attractor_id - 1]['states'][0]
+        target_state = {}
+        for k, v in raw_state.items():
+            try:
+                target_state[k] = safe_bool(v)
+            except Exception:
+                print(f"Warning: Could not convert {k}={v} to boolean, defaulting to False")
+                target_state[k] = False
     
     # Option 2: Try loading from cache file
     elif use_cache:
@@ -222,7 +235,14 @@ def visualize_attractor_basin(model, attractor_id, max_states=50, cached_results
                                 f"Attractor ID {attractor_id} doesn't exist. "
                                 f"Only {len(cached_data['stable_states'])} attractors found."
                             )
-                        target_state = cached_data['stable_states'][attractor_id - 1]['states'][0]
+                        raw_state = cached_data['stable_states'][attractor_id - 1]['states'][0]
+                        target_state = {}
+                        for k, v in raw_state.items():
+                            try:
+                                target_state[k] = safe_bool(v)
+                            except Exception:
+                                print(f"Warning: Could not convert {k}={v} to boolean, defaulting to False")
+                                target_state[k] = False
                         print(f"Successfully loaded attractor {attractor_id} from cache")
             except (IOError, pickle.PickleError) as e:
                 print(f"Could not load from cache: {str(e)}")
@@ -242,7 +262,14 @@ def visualize_attractor_basin(model, attractor_id, max_states=50, cached_results
                     f"Only {len(stable_states)} attractors found."
                 )
                 
-            target_state = stable_states[attractor_id - 1]
+            raw_state = stable_states[attractor_id - 1]
+            target_state = {}
+            for k, v in raw_state.items():
+                try:
+                    target_state[k] = safe_bool(v)
+                except Exception:
+                    print(f"Warning: Could not convert {k}={v} to boolean, defaulting to False")
+                    target_state[k] = False
             print(f"Computed stable states, using attractor {attractor_id} for basin visualization")
         except Exception as e:
             raise ValueError(f"Error computing stable states: {str(e)}") from e
@@ -250,36 +277,39 @@ def visualize_attractor_basin(model, attractor_id, max_states=50, cached_results
     # Create a state transition graph
     graph = nx.DiGraph()
     
-    # Convert target_state to tuple for graph representation
-    # Safe conversion of symbolic values to Python booleans
-    target_state_tuple = tuple(sorted((k, safe_bool(v)) for k, v in target_state.items()))
+    # Now create a string-based representation for the target state to avoid any boolean evaluation issues
+    # We'll use strings like "k1=True,k2=False,..." as node identifiers
+    def state_to_str(state_dict):
+        """Convert a state dictionary to a stable string representation"""
+        return ",".join(f"{k}={state_dict[k]}" for k in sorted(state_dict.keys()))
+    
+    target_state_str = state_to_str(target_state)
     
     # Add the attractor state to the graph
-    graph.add_node(target_state_tuple, color='red', attractor=True)
+    graph.add_node(target_state_str, color='red', attractor=True)
     
     # Generate some random initial states and trace their trajectories
-    basin_states = set([target_state_tuple])
+    basin_states = set([target_state_str])
     
     # Generate random initial states and simulate
     for _ in range(min(max_states-1, 20)):
-        # Create a random state
+        # Create a random state with Python booleans
         random_state = {}
         for var in model.variables:
             random_state[var] = bool(np.random.randint(2))
         
-        # Simulate trajectory
-        curr_state = {k: safe_bool(v) for k, v in random_state.items()}
+        # Simulate trajectory - ensure we're working with Python booleans
+        curr_state = {k: bool(v) for k, v in random_state.items()}
         state_history = []
         
         # Run the simulation until we reach a fixed point or a cycle
-        for _ in range(100):  # Maximum simulation steps
-            # Convert to tuple with explicit safe boolean conversion
-            curr_state_tuple = tuple(
-                sorted((k, safe_bool(v)) for k, v in curr_state.items())
-            )
-            state_history.append(curr_state_tuple)
+        max_steps = 100
+        for step in range(max_steps):
+            # Convert the state to a string representation
+            curr_state_str = state_to_str(curr_state)
+            state_history.append(curr_state_str)
             
-            # Update the state
+            # Update the state using the model's update rules
             next_state = {}
             for var in model.variables:
                 if var in model.desc:
@@ -288,69 +318,90 @@ def visualize_attractor_basin(model, attractor_id, max_states=50, cached_results
                     if isinstance(update_rule, bool):
                         next_state[var] = update_rule
                     else:
-                        # Try to evaluate the symbolic expression
+                        # Try to evaluate the symbolic expression safely
                         try:
-                            substitution = {
-                                v: safe_bool(curr_state.get(v, False)) for v in model.variables
-                            }
+                            # Create substitution dictionary with clean Python booleans
+                            substitution = {v: curr_state.get(v, False) for v in model.variables}
+                            # Evaluate the rule
                             result = update_rule.subs(substitution)
-                            next_state[var] = safe_bool(result)  # Use safe_bool here
-                        except (TypeError, ValueError, Exception) as e:
+                            # Safely convert to Python boolean
+                            next_state[var] = safe_bool(result)
+                        except Exception:
                             # Fall back to current state if evaluation fails
-                            print(f"Warning: Failed to evaluate {var}: {str(e)}")
-                            next_state[var] = safe_bool(curr_state.get(var, False))
+                            next_state[var] = curr_state.get(var, False)
                 else:
-                    next_state[var] = safe_bool(curr_state.get(var, False))
+                    next_state[var] = curr_state.get(var, False)
             
-            # Ensure all values are safely converted to boolean
-            curr_state = {k: safe_bool(v) for k, v in next_state.items()}
+            # Ensure we have plain Python booleans
+            curr_state = {k: bool(v) for k, v in next_state.items()}
+            
+            # Convert to string representation for comparison
+            curr_state_str = state_to_str(curr_state)
             
             # Check if we've reached the target attractor
-            curr_state_tuple = tuple(
-                sorted((k, safe_bool(v)) for k, v in curr_state.items())
-            )
-            if curr_state_tuple == target_state_tuple:
+            if curr_state_str == target_state_str:
                 # Add all states in the trajectory to the basin graph
-                state_history.append(curr_state_tuple)
+                state_history.append(curr_state_str)
                 for i in range(len(state_history) - 1):
                     s1, s2 = state_history[i], state_history[i + 1]
                     if s1 not in basin_states:
                         graph.add_node(s1, color='lightblue', attractor=False)
                         basin_states.add(s1)
-                    if s2 not in basin_states and s2 != target_state_tuple:
+                    if s2 not in basin_states and s2 != target_state_str:
                         graph.add_node(s2, color='lightblue', attractor=False)
                         basin_states.add(s2)
                     graph.add_edge(s1, s2)
                 break
             
             # Check if we're in a cycle (detected by revisiting a state)
-            if curr_state_tuple in state_history:
+            if curr_state_str in state_history[:-1]:  # Exclude the state we just added
+                # Add the cycle to the graph
+                cycle_start_idx = state_history.index(curr_state_str)
+                cycle = state_history[cycle_start_idx:] + [curr_state_str]
+                
+                for i in range(len(cycle) - 1):
+                    s1, s2 = cycle[i], cycle[i + 1]
+                    if s1 not in basin_states:
+                        graph.add_node(s1, color='orange', attractor=False)
+                        basin_states.add(s1)
+                    if s2 not in basin_states:
+                        graph.add_node(s2, color='orange', attractor=False)
+                        basin_states.add(s2)
+                    graph.add_edge(s1, s2)
                 break
+            
+            # Break if we've reached the maximum number of steps
+            if step == max_steps - 1:
+                print(f"Warning: Reached maximum steps ({max_steps}) without finding attractor or cycle")
     
     # Draw the basin
     plt.figure(figsize=(10, 8))
     
     # Define node colors based on whether they are attractors
-    node_colors = [
-        'red' if graph.nodes[n].get('attractor', False) else 'lightblue' 
-        for n in graph.nodes
-    ]
+    node_colors = []
+    for n in graph.nodes:
+        if graph.nodes[n].get('attractor', False):
+            node_colors.append('red')
+        elif graph.nodes[n].get('color', '') == 'orange':
+            node_colors.append('orange')
+        else:
+            node_colors.append('lightblue')
     
     # Use the spring layout algorithm for positioning nodes
-    pos = nx.spring_layout(graph)
+    pos = nx.spring_layout(graph, k=0.3, iterations=50)
     
     # Draw nodes
-    nx.draw_networkx_nodes(graph, pos, node_color=node_colors, alpha=0.8)
+    nx.draw_networkx_nodes(graph, pos, node_color=node_colors, alpha=0.8, node_size=300)
     
     # Draw edges
-    nx.draw_networkx_edges(graph, pos, edge_color='gray', alpha=0.6, arrowsize=10)
+    nx.draw_networkx_edges(graph, pos, edge_color='gray', alpha=0.6, arrowsize=15)
     
-    # Add labels only to the attractor node
+    # Add labels only to the attractor nodes
     attractor_nodes = {
         n: f"Attractor {attractor_id}" 
         for n in graph.nodes if graph.nodes[n].get('attractor', False)
     }
-    nx.draw_networkx_labels(graph, pos, labels=attractor_nodes, font_size=10)
+    nx.draw_networkx_labels(graph, pos, labels=attractor_nodes, font_size=10, font_weight='bold')
     
     plt.title(f"Basin of Attraction for Attractor {attractor_id}")
     plt.axis('off')
@@ -377,7 +428,5 @@ def print_attractor_details(attractors_result):
 def determine_cell_division_phenotype(state, threshold=0.6):
     """Determine if a state represents a cell division phenotype"""
     key_markers = ['CDK2', 'CDK4', 'pRB']
-    marker_symbols = [symbols(m) for m in key_markers]
-    # Use safe_bool when evaluating state values
-    active_count = sum(1 for m in marker_symbols if safe_bool(state.get(m, False)))
+    active_count = sum(1 for m in key_markers if safe_bool(state.get(m, False)))
     return (active_count / len(key_markers)) >= threshold

@@ -1,0 +1,10 @@
+Perturbation,Expected_Proliferation,Model_Proliferation,Expected_Apoptosis,Model_Apoptosis
+PTEN_KO,True,True,False,False
+p53_KO,True,True,False,False
+c-MYC_OE,True,False,False,False
+ERK_KO,False,True,False,False
+AKT_KO,False,True,True,False
+ER_alpha_KO,False,True,False,False
+ERBB2_KO,False,True,False,False
+EGFR_KO,False,True,False,False
+Cyclin_D1_KO,False,True,False,False

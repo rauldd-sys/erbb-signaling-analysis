@@ -9,7 +9,7 @@ p21=ON + p27=ON,3,True,Original
 ERBB2=OFF + AKT1=OFF + MEK1=OFF,2,True,Original
 ER_alpha=OFF + c_MYC=OFF + AKT1=OFF,2,False,Original
 ERBB1=OFF + ERBB2=OFF,7,False,Refined
-ERBB1=OFF + ERBB2=OFF + ERBB3=OFF,4,False,Refined
+ERBB1=OFF + ERBB2=OFF + ERBB3=OFF,3,False,Refined
 AKT1=OFF + MEK1=OFF,2,True,Refined
 ERBB2=OFF + AKT1=OFF,2,True,Refined
 ERBB2=OFF + MEK1=OFF,3,True,Refined

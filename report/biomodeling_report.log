@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2025.1.17)  6 APR 2025 22:43
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2025.1.17)  6 APR 2025 22:49
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -508,6 +508,8 @@ Overfull \hbox (14.9992pt too wide) in paragraph at lines 106--107
  []
 
 
+
+[2{c:/texlive/2024/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
 Underfull \hbox (badness 10000) in paragraph at lines 116--116
 []|\OT1/cmr/bx/n/12 Experimental
  []
@@ -518,8 +520,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 119--119
  []
 
 
-
-[2{c:/texlive/2024/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
 
 [3]
 
@@ -565,7 +565,7 @@ Underfull \hbox (badness 1629) in paragraph at lines 244--245
 [10
 
 ]
-runsystem(latexminted cleantemp  --timestamp 20250406224356 3AF72741EF5B9284061A8AF0A8D7F9E1)...executed safely (allowed).
+runsystem(latexminted cleantemp  --timestamp 20250406224915 3AF72741EF5B9284061A8AF0A8D7F9E1)...executed safely (allowed).
 
  (./biomodeling_report.aux)
  ***********
@@ -582,9 +582,9 @@ Here is how much of TeX's memory you used:
  38782 multiletter control sequences out of 15000+600000
  565146 words of font info for 58 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 85i,12n,93p,1340b,519s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 85i,12n,93p,1340b,505s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb><c:/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb><c:/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><c:/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><c:/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb><c:/texlive/2024/texmf-dist/fonts/type1/public/cm-super/sfrm1200.pfb>
-Output written on biomodeling_report.pdf (11 pages, 1715994 bytes).
+Output written on biomodeling_report.pdf (11 pages, 1716217 bytes).
 PDF statistics:
  172 PDF objects out of 1000 (max. 8388607)
  131 compressed objects within 2 object streams
